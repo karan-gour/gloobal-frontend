@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
-import GloobalAuth from './GloobalAuth';
-import GloobalRegistration from './GloobalRegistration';
+import Registration from './Registration';
+import GloobalAuth from './GloobalAuth'; // This is your existing WebAuthn file
 
-function App() {
-  // State to track if the user has passed the security check
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export default function App() {
+  const [activeSymbolId, setActiveSymbolId] = useState(null);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      
-      {/* The Traffic Cop Logic: 
-        If isAuthenticated is false, show Auth screen. 
-        If true, show the Registration dashboard! 
-      */}
-      {!isAuthenticated ? (
-        <GloobalAuth onAuthenticated={() => setIsAuthenticated(true)} />
+    <div className="min-h-screen bg-gray-50">
+      {/* If there is no active Symbol ID, show the Registration form */}
+      {!activeSymbolId ? (
+        <Registration onSymbolCreated={(newId) => setActiveSymbolId(newId)} />
       ) : (
-        <GloobalRegistration />
+        /* Once registered, show the biometric auth screen and pass the ID into it */
+        <GloobalAuth symbolId={activeSymbolId} />
       )}
-      
     </div>
   );
 }
-
-export default App;
