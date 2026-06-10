@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
 import GloobleAccess from './GloobleAccess';
-import GloobalAuth from './GloobalAuth'; // Your existing fingerprint page
+import GloobalAuth from './GloobalAuth';
+import Dashboard from './Dashboard';
 
 export default function App() {
-  const [activeSymbolId, setActiveSymbolId] = useState(null);
+  // Explicitly track which page should be visible: 'register', 'login', or 'dashboard'
+  const [currentPage, setCurrentPage] = useState('register');
+  const [session, setSession] = useState({ symbolId: '', fullName: '' });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f4f5f7]">
       
-      {/* 1. Show the Custom Symbol Pad FIRST */}
-      {!activeSymbolId ? (
+      {/* 1. REGISTRATION STEP */}
+      {currentPage === 'register' && (
         <GloobleAccess 
-          onComplete={(newSymbolId) => setActiveSymbolId(newSymbolId)} 
+          onComplete={(userData) => {
+            setSession({ symbolId: userData.symbolId, fullName: userData.fullName });
+            setCurrentPage('login'); // Instantly switch to login pad
+          }} 
         />
-      ) : (
-        
-      /* 2. Transition to Fingerprint Scanner SECOND */
-        <GloobalAuth symbolId={activeSymbolId} />
+      )}
+
+      {/* 2. SECURE LOGIN STEP */}
+      {currentPage === 'login' && (
+        <GloobalAuth 
+          symbolId={session.symbolId} 
+          onSuccess={() => {
+            setCurrentPage('dashboard'); // Instantly switch to scrollable dashboard!
+          }} 
+        />
+      )}
+
+      {/* 3. LIVE DASHBOARD STEP */}
+      {currentPage === 'dashboard' && (
+        <Dashboard symbolId={session.symbolId} />
       )}
 
     </div>

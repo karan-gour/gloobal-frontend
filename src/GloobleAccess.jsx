@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import './GloobleAccess.css'; // This links your new styling file!
+import axios from 'axios'; // ➔ ADDED THIS IMPORT
+import './GloobleAccess.css';
 
 export default function GloobleAccess({ onComplete }) {
   const [name, setName] = useState('');
   const [referrer, setReferrer] = useState('');
   const [symbols, setSymbols] = useState([]);
   const [isHidden, setIsHidden] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState(null);
 
   const keys = ['+', '-', '×', '=', '□', '■', '○', '●'];
 
@@ -15,9 +17,32 @@ export default function GloobleAccess({ onComplete }) {
 
   const handleDelete = () => setSymbols(symbols.slice(0, -1));
 
-  const handleSubmit = () => {
+  // ➔ UPDATED THIS FUNCTION TO TALK TO BACKEND
+  const handleSubmit = async () => {
     if (symbols.length > 0 && name.trim() !== '') {
-      onComplete(symbols.join(''));
+      const userData = {
+        symbolId: symbols.join(''),
+        fullName: name.trim(),
+        referredBy: referrer.trim()
+      };
+      
+      try {
+        // 1. Send the data to your local server running on port 5000
+        await axios.post('http://localhost:5000/api/register-symbol', userData);
+        
+        // 2. If backend saves successfully, show the welcome animation
+        setRegisteredUser(userData);
+
+        // 3. Move to the PIN authentication screen after 2.5 seconds
+        setTimeout(() => {
+          onComplete(userData);
+        }, 2500);
+
+      } catch (err) {
+        console.error("Registration saving error:", err);
+        alert(err.response?.data?.message || "Could not connect to local server. Make sure node server.js is running!");
+      }
+
     } else {
       alert("Please enter your Documented Name and at least 1 symbol.");
     }
@@ -29,7 +54,7 @@ export default function GloobleAccess({ onComplete }) {
       if (i < symbols.length) {
         slots.push(<span key={i}>{isHidden ? '*' : symbols[i]}</span>);
       } else {
-        slots.push(<span key={i} style={{ color: '#9ca3af' }}>-</span>);
+        slots.push(<span key={i} style={{ color: '#475569' }}>-</span>);
       }
     }
     return slots;
@@ -39,54 +64,66 @@ export default function GloobleAccess({ onComplete }) {
     <div className="ga-wrapper">
       <div className="ga-card">
         
-        <h2 className="ga-title">Glooble Access</h2>
-
-        <input
-          type="text"
-          className="ga-input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Documented Name"
-        />
-
-        <div>
-          <div className="ga-id-header">
-            <span>12-Symbol Secure ID</span>
-            <span>{symbols.length} / 12</span>
+        {registeredUser ? (
+          <div className="ga-welcome-view">
+            <div className="ga-welcome-avatar">👋</div>
+            <h2 className="ga-welcome-name">Welcome, {registeredUser.fullName}</h2>
+            <p className="ga-subtitle">@{registeredUser.symbolId}</p>
+            <div className="ga-welcome-status">Registration Complete</div>
+            <p className="ga-footer" style={{ marginTop: '40px' }}>Preparing hardware authentication secures your profile...</p>
           </div>
-          
-          <div className="ga-display-box">
-            <div className="ga-symbols">{renderDisplay()}</div>
-            <button className="ga-hide-btn" onClick={() => setIsHidden(!isHidden)}>
-              {isHidden ? '🙈' : '🐵'}
-            </button>
-          </div>
-        </div>
+        ) : (
+          <>
+            <h2 className="ga-title">Glooble Access</h2>
 
-        <input
-          type="text"
-          className="ga-input"
-          value={referrer}
-          onChange={(e) => setReferrer(e.target.value)}
-          placeholder="Referrer Wallet (Optional)"
-        />
+            <input
+              type="text"
+              className="ga-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Documented Name"
+            />
 
-        <div className="ga-keypad-container">
-          <div className="ga-grid">
-            {keys.map((char) => (
-              <button key={char} onClick={() => handleKeyPress(char)} className="ga-btn">
-                {char}
-              </button>
-            ))}
-            <button onClick={handleDelete} className="ga-btn ga-btn-del">⌫</button>
-            <button onClick={() => handleKeyPress('Φ')} className="ga-btn ga-btn-phi">Φ</button>
-            <button onClick={handleSubmit} className="ga-btn ga-btn-submit">⇌</button>
-          </div>
-        </div>
+            <div>
+              <div className="ga-id-header">
+                <span>12-Symbol Secure ID</span>
+                <span>{symbols.length} / 12</span>
+              </div>
+              
+              <div className="ga-display-box">
+                <div className="ga-symbols">{renderDisplay()}</div>
+                <button type="button" className="ga-hide-btn" onClick={() => setIsHidden(!isHidden)}>
+                  {isHidden ? '🙈' : '🐵'}
+                </button>
+              </div>
+            </div>
 
-        <div className="ga-footer">
-          <span style={{ color: '#ef4444' }}>❤️</span> from भारत
-        </div>
+            <input
+              type="text"
+              className="ga-input"
+              value={referrer}
+              onChange={(e) => setReferrer(e.target.value)}
+              placeholder="Referrer Wallet (Optional)"
+            />
+
+            <div className="ga-keypad-container">
+              <div className="ga-grid">
+                {keys.map((char) => (
+                  <button key={char} type="button" onClick={() => handleKeyPress(char)} className="ga-btn">
+                    {char}
+                  </button>
+                ))}
+                <button type="button" onClick={handleDelete} className="ga-btn ga-btn-del">⌫</button>
+                <button type="button" onClick={() => handleKeyPress('Φ')} className="ga-btn ga-btn-phi">Φ</button>
+                <button type="button" onClick={handleSubmit} className="ga-btn ga-btn-submit">⇆</button>
+              </div>
+            </div>
+
+            <div className="ga-footer">
+              <span style={{ color: '#ef4444' }}>❤️</span> from भारत
+            </div>
+          </>
+        )}
 
       </div>
     </div>
